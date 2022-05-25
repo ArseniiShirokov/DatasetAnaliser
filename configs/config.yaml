@@ -1,0 +1,5 @@
+defaults:
+  - mapping: att_4
+
+path: attributes_train_5.csv
+

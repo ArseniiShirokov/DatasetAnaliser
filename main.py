@@ -9,6 +9,7 @@ mapping_version = "att_3"
 part = "train"
 dataset_name = omegaconf.OmegaConf.load('configs/config.yaml')["path"]
 mapping = omegaconf.OmegaConf.load(f'configs/mapping/{mapping_version}.yaml')
+dataset_dependencies = omegaconf.OmegaConf.load("configs/dataset_dependencies.yaml")
 ############
 
 chart = functools.partial(st.plotly_chart, use_container_width=True)

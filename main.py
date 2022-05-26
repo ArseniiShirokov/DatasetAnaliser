@@ -3,13 +3,16 @@ import omegaconf
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import pydot
+import cv2
 
 ############
 mapping_version = "att_3"
 part = "train"
-dataset_name = omegaconf.OmegaConf.load('configs/config.yaml')["path"]
+csv_path = omegaconf.OmegaConf.load('configs/config.yaml')["path"]
 mapping = omegaconf.OmegaConf.load(f'configs/mapping/{mapping_version}.yaml')
 dataset_dependencies = omegaconf.OmegaConf.load("configs/dataset_dependencies.yaml")
+dataset_name = list(dataset_dependencies.keys())[0]
 ############
 
 chart = functools.partial(st.plotly_chart, use_container_width=True)
@@ -34,14 +37,39 @@ def filter_data(
     return df[columns]
 
 
-def main() -> None:
-    st.header("Attributes: наборы данных")
-    with st.expander("Info"):
-        st.write("Mapping:  " + mapping_version)
-        st.write("Part:  " + part)
-        st.write("Path:  " + dataset_name)
+def build_dependencies_graph():
+    graph = pydot.Dot(graph_type='digraph')
+    # Convert to dict format
+    dict_dep = omegaconf.OmegaConf.to_container(dataset_dependencies)
 
-    df = pd.read_csv(dataset_name)
+    def dfs(vertex: dict or str, parent: pydot.Node) -> None:
+        if type(vertex) == list:
+            for v in vertex:
+                node = pydot.Node(parent.get_name() + v, label=v)
+                graph.add_node(node)
+                graph.add_edge(pydot.Edge(parent, node))
+            return
+        for name, child in vertex.items():
+            node = pydot.Node(name, label=name)
+            graph.add_node(node)
+            graph.add_edge(pydot.Edge(parent, node))
+            dfs(child, node)
+
+    root_name = list(dict_dep.keys())[0]
+    root = pydot.Node(root_name)
+    dfs(dict_dep[root_name], root)
+    graph.write_png('generated/dependencies_tree.png')
+
+
+def main() -> None:
+    st.header(f"Attributes: {dataset_name}")
+    build_dependencies_graph()
+
+    with st.expander("Иерархия"):
+        image = cv2.imread('generated/dependencies_tree.png')
+        st.image(image)
+
+    df = pd.read_csv(csv_path)
     df = clean_data(df)
 
     st.sidebar.subheader("Фильтрация по наборам")
@@ -80,7 +108,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     st.set_page_config(
-        "Fidelity Account View by Gerard Bentley",
+        "Attributes: наборы данных",
         "📊",
         initial_sidebar_state="expanded",
         layout="wide",

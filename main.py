@@ -1,3 +1,4 @@
+from Typing import List
 import functools
 import omegaconf
 import streamlit as st
@@ -29,7 +30,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 @st.experimental_memo
 def filter_data(
-    df: pd.DataFrame, dataset_selections: list[str], attribute_selections: list[str]
+    df: pd.DataFrame, dataset_selections: List[str], attribute_selections: List[str]
 ) -> pd.DataFrame:
     df = df.copy()
     df = df[df.datasets.isin(dataset_selections)]
